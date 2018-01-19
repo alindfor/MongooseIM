@@ -226,8 +226,7 @@ do_archive_message(_Result, Host, MessID, UserID,
     Data = packet_to_stored_binary(Host, Packet),
     TextBody = mod_mam_utils:packet_to_search_body(mod_mam, Host, Packet),
     STextBody = mongoose_rdbms:escape(TextBody),
-    EscFormat = mongoose_rdbms:escape_format(Host),
-    SData = mongoose_rdbms:escape_binary(EscFormat, Data),
+    SData = mongoose_rdbms:escape_binary(Host, Data),
     SMessID = integer_to_list(MessID),
     Table = "mam_message",
     write_message(Host, Table, SMessID, SUserID, SBareRemJID,
@@ -237,7 +236,7 @@ do_archive_message(_Result, Host, MessID, UserID,
 -spec write_message(Host :: ejabberd:server(), Table :: string(),
                     SMessID :: string(), SUserID :: string(), SBareRemJID :: string(),
                     SRemLResource :: string(), SDir :: string(), SSrcJID :: string(),
-                    SData :: string(), TextBody :: string()) -> 'ok'.
+                    SData :: binary(), TextBody :: string()) -> 'ok'.
 write_message(Host, Table, SMessID, SUserID, SBareRemJID,
               SRemLResource, SDir, SSrcJID, SData, STextBody) ->
     {updated, 1} =
@@ -248,7 +247,7 @@ write_message(Host, Table, SMessID, SUserID, SBareRemJID,
            "from_jid, message, search_body) "
            "VALUES ('", SMessID, "', '", SUserID, "', '", SBareRemJID, "', "
            "'", SRemLResource, "', '", SDir, "', ",
-           "'", SSrcJID, "', '", SData, "', '", STextBody, "');"]),
+           "'", SSrcJID, "', ", SData, ", '", STextBody, "');"]),
     ok.
 
 prepare_message(Host, MessID, UserID, LocJID = #jid{}, RemJID = #jid{lresource = RemLResource},
@@ -482,15 +481,13 @@ before_id(ID, Filter) ->
     [Filter, " AND id < '", SID, "'"].
 
 rows_to_uniform_format(Host, UserJID, MessageRows) ->
-    EscFormat = mongoose_rdbms:escape_format(Host),
-    DbEngine = mongoose_rdbms:db_engine(Host),
-    [row_to_uniform_format(Host, DbEngine, UserJID, EscFormat, Row) || Row <- MessageRows].
+    Pool = mongoose_rdbms_sup:pool(Host),
+    [row_to_uniform_format(Host, Pool, UserJID, Row) || Row <- MessageRows].
 
-row_to_uniform_format(Host, DbEngine, UserJID, EscFormat, {BMessID, BSrcJID, SDataRaw}) ->
+row_to_uniform_format(Host, Pool, UserJID, {BMessID, BSrcJID, SDataRaw}) ->
     MessID = mongoose_rdbms:result_to_integer(BMessID),
     SrcJID = stored_binary_to_jid(Host, UserJID, BSrcJID),
-    SData = mongoose_rdbms:unescape_odbc_binary(DbEngine, SDataRaw),
-    Data = mongoose_rdbms:unescape_binary(EscFormat, SData),
+    Data = mongoose_rdbms:unescape_binary(Pool, SDataRaw),
     Packet = stored_binary_to_packet(Host, Data),
     {MessID, SrcJID, Packet}.
 
@@ -757,4 +754,3 @@ db_jid_codec(Host) ->
 -spec db_message_codec(ejabberd:server()) -> module().
 db_message_codec(Host) ->
     gen_mod:get_module_opt(Host, ?MODULE, db_message_format, mam_message_compressed_eterm).
-
