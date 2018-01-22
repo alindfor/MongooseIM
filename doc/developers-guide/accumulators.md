@@ -20,7 +20,7 @@ Throughout the process it is the very same accumulator; it is therefore possible
 The main assumption is that whatever the MongooseIM does, it is always triggered by a stanza entering the system, one way or another (with an exeption for REST methods and mongooseimctl, that should have their own methods of creating and processing an accumulator).
 The stanza should always be packed into an accumulator and passed on, so that internally every action is performed the same way.
 
-There are three main benefits from this approach:
+There are three main benefits from using this approach:
 
 a) performance - if we need to do something involving inspecting a stanza or more complicated operations (e.g. privacy check) we don't need to do it multiple times on various stages of processing - instead we can do it once and store the result in an accumulator
 
