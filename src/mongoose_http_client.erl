@@ -134,7 +134,7 @@ make_request(Pool, Path, Method, Headers, Query) ->
           name = PoolName,
           pool_timeout = PoolTimeout,
           request_timeout = RequestTimeout} = Pool,
-    FakeRequestTimeout = 1,
+    FakeRequestTimeout = 20,
     FullPath = <<PathPrefix/binary, Path/binary>>,
     case catch poolboy:transaction(
                  pool_proc_name(PoolName),
