@@ -135,8 +135,8 @@ make_request(Pool, Path, Method, Headers, Query) ->
           pool_timeout = PoolTimeout,
           request_timeout = RequestTimeout} = Pool,
     FakeRequestTimeout = 20,
-    ct:print("Original timeout: ~p~n", [RequestTimeout]),
-    ct:print("Fake timeout: ~p~n", [FakeRequestTimeout]),
+    io:format("Original timeout: ~p~n", [RequestTimeout]),
+    io:format("Fake timeout: ~p~n", [FakeRequestTimeout]),
     FullPath = <<PathPrefix/binary, Path/binary>>,
     case catch poolboy:transaction(
                  pool_proc_name(PoolName),
